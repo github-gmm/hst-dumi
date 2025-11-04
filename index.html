@@ -19,7 +19,7 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            max-width: 1024px; /* iPad宽度 */
+            max-width: 1024px;
             margin: 0 auto;
         }
         
@@ -71,6 +71,16 @@
             line-height: 1.5;
             margin-bottom: 15px;
             color: #2c3e50;
+        }
+        
+        .question-type {
+            display: inline-block;
+            margin-left: 10px;
+            padding: 2px 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #6c757d;
         }
         
         .options-container {
@@ -143,6 +153,11 @@
             background: #218838;
         }
         
+        .next-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        
         .result-container {
             display: none;
             background: #fff;
@@ -183,36 +198,72 @@
             background: #155d9c;
         }
         
-        .question-navigation {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 15px;
+        .answer-review {
+            margin-top: 30px;
+            text-align: left;
+            max-height: 400px;
+            overflow-y: auto;
         }
         
-        .nav-btn {
-            width: 35px;
-            height: 35px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .review-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 6px;
             background: #f8f9fa;
-            border: 1px solid #e1e4e8;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
         }
         
-        .nav-btn.current {
+        .review-question {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .review-answer {
+            margin-bottom: 5px;
+        }
+        
+        .correct {
+            color: #28a745;
+        }
+        
+        .incorrect {
+            color: #dc3545;
+        }
+        
+        .review-status {
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 18px;
+            color: #6c757d;
+        }
+        
+        .error-message {
+            text-align: center;
+            padding: 20px;
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        .start-btn {
+            padding: 12px 30px;
             background: #1e6fba;
             color: white;
-            border-color: #1e6fba;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 20px auto;
+            display: block;
         }
         
-        .nav-btn.answered {
-            background: #d4edda;
-            border-color: #c3e6cb;
+        .start-btn:hover {
+            background: #155d9c;
         }
     </style>
 </head>
@@ -222,408 +273,56 @@
         <p>测试时间：1分钟 | 题目数量：30题</p>
     </div>
     
-    <div class="timer-container">
+    <div class="loading" id="loading">
+        正在加载题目，请稍候...
+    </div>
+    
+    <div class="error-message" id="error-message" style="display: none;">
+        加载题目失败，请检查JSON文件是否存在且格式正确
+    </div>
+    
+    <button class="start-btn" id="start-btn" style="display: none;">开始答题</button>
+    
+    <div class="timer-container" id="timer-container" style="display: none;">
         <div class="timer">剩余时间: <span id="time">01:00</span></div>
         <div class="progress">题目: <span id="current-question">1</span>/<span id="total-questions">30</span></div>
     </div>
     
-    <div class="question-container">
+    <div class="question-container" id="question-container" style="display: none;">
         <div class="question-title" id="question-text">题目加载中...</div>
         <div class="options-container" id="options-container">
             <!-- 选项将通过JavaScript动态生成 -->
         </div>
     </div>
     
-    <div class="bottom-controls">
+    <div class="bottom-controls" id="bottom-controls" style="display: none;">
         <div class="option-buttons" id="option-buttons">
             <!-- 选项按钮将通过JavaScript动态生成 -->
         </div>
-        <button class="next-btn" id="next-btn">下一题</button>
-    </div>
-    
-    <div class="question-navigation" id="question-navigation">
-        <!-- 导航按钮将通过JavaScript动态生成 -->
+        <button class="next-btn" id="next-btn" disabled>下一题</button>
     </div>
     
     <div class="result-container" id="result-container">
         <h2 class="result-title">答题完成</h2>
         <div class="score" id="score">0</div>
         <p id="result-message"></p>
+        <div class="answer-review" id="answer-review">
+            <!-- 答题记录将通过JavaScript动态生成 -->
+        </div>
         <button class="restart-btn" id="restart-btn">重新开始</button>
     </div>
 
     <script>
-        // 从JSON数据中提取所有题目
-        const allQuestions = [
-            {
-                "id": 1,
-                "question": "属于政府信息查阅场所的是（ ）。",
-                "options": [
-                    "A.电子图书馆",
-                    "B.大学图书馆",
-                    "C.政府网站",
-                    "D.国家档案馆",
-                    "E.公共图书馆",
-                    "F.政务服务场所"
-                ],
-                "answer": ["D", "E", "F"]
-            },
-            {
-                "id": 2,
-                "question": "强化对行政权力的制约监督，深入推进政务公开，扩大和保障人民群众（ ）。",
-                "options": [
-                    "A.知情权",
-                    "B.知悉权",
-                    "C.表达权",
-                    "D.建议权",
-                    "E.监督权",
-                    "F.参与权"
-                ],
-                "answer": ["A", "C", "E", "F"]
-            },
-            {
-                "id": 3,
-                "question": "委托人在中介超市选取中介机构主要有以下几种方式。（ ）",
-                "options": [
-                    "A.随机选取",
-                    "B.竞价选取",
-                    "C.直接选取",
-                    "D.摇号选取",
-                    "E.公开选取"
-                ],
-                "answer": ["A", "B", "C"]
-            },
-            {
-                "id": 4,
-                "question": "《国务院关于加快推进政务服务标准化规范化便利化的指导意见》（国发〔2022〕5号）中提出不断提升政务服务\"三化\"水平，\"三化\"指的是（）。",
-                "options": [
-                    "A.标准化",
-                    "B.高效化",
-                    "C.规范化",
-                    "D.便利化",
-                    "E.智能化"
-                ],
-                "answer": ["A", "C", "D"]
-            },
-            {
-                "id": 5,
-                "question": "政务数据共享主管部门违反本条例规定，有下列( )情形之一的，由本级人民政府或者上级主管部门责令改正；拒不改正或者情节严重的，对负有责任的领导人员和直接责任人员依法给予处分。",
-                "options": [
-                    "A.未按照规定保存通过共享获取的政务数据有关记录",
-                    "B.未对通过共享获取的政务数据履行安全管理责任",
-                    "C.未按照规定明确数源部门",
-                    "D.未按照规定对政务数据共享争议进行协调处理",
-                    "E.违反本条例规定的其他情形。"
-                ],
-                "answer": ["C", "D", "E"]
-            },
-            {
-                "id": 6,
-                "question": "对政务公开窗口工作人员进行岗前培训和定期培训，按照（ ）的上岗标准。",
-                "options": [
-                    "A.会答",
-                    "B.会指导",
-                    "C.会笑",
-                    "D.会查",
-                    "E.会说",
-                    "F.会宣传"
-                ],
-                "answer": ["A", "C", "D"]
-            },
-            {
-                "id": 7,
-                "question": "根据《中华人民共和国政府信息公开条例》的规定，申请人以政府信息公开申请的形式进行（ ）三类活动，行政机关应当告知申请人不作为政府信息公开申请处理并可以告知通过相应渠道提出。",
-                "options": [
-                    "A.检举",
-                    "B.信访",
-                    "C.投诉",
-                    "D.举报",
-                    "E.上诉"
-                ],
-                "answer": ["B", "C", "D"]
-            },
-            {
-                "id": 8,
-                "question": "建设各级政务服务数据共享平台，目的是推进跨地区、跨部门、跨层级数据共享、身份互信、证照互用及（ ）。",
-                "options": [
-                    "A.业务协同",
-                    "B.实现就近办理",
-                    "C.同城通办",
-                    "D.异地可办"
-                ],
-                "answer": ["A", "B", "C", "D"]
-            },
-            {
-                "id": 9,
-                "question": "因工伤发生的（ ）费用,按照国家规定由用人单位支付。",
-                "options": [
-                    "A.治疗工伤期间的工资福利",
-                    "B.五级、六级伤残职工按月领取的伤残津贴",
-                    "C.终止或者解除劳动合同时,应当享受的一次性伤残就业补助金",
-                    "D.住院伙食补助费",
-                    "E.到统筹地区以外就医的交通食宿费"
-                ],
-                "answer": ["A", "B", "C"]
-            },
-            {
-                "id": 10,
-                "question": "建设\"互联网+政务服务\"的总体目标是（ ）。",
-                "options": [
-                    "A.优化各地区各部门网上政务服务平台建设不断简化优化企业和群众办事流程",
-                    "B.促进网上政务服务运行规范",
-                    "C.让信息\"多跑路\"让群众\"少跑腿\"",
-                    "D.就近办"
-                ],
-                "answer": ["A", "B", "C", "D"]
-            },
-            {
-                "id": 11,
-                "question": "开展各地区各部门一体化政务服务平台建设，主要是为实现政务服务事项（ ）。",
-                "options": [
-                    "A.统一申请",
-                    "B.统一受理",
-                    "C.集中办理",
-                    "D.统一反馈和全流程监督"
-                ],
-                "answer": ["A", "B", "C", "D"]
-            },
-            {
-                "id": 12,
-                "question": "公民、法人或者其他组织认为行政机关在政府信息公开工作中侵犯其合法权益的，可以向上一级行政机关或者政府信息公开工作主管部门投诉、举报，也可以依法（ ）。",
-                "options": [
-                    "A.检举",
-                    "B.追责",
-                    "C.申请行政复议",
-                    "D.提起行政诉讼"
-                ],
-                "answer": ["C", "D"]
-            },
-            {
-                "id": 13,
-                "question": "互联网政务服务第三方评估指标主要包括服务方式完备度及（ ）。",
-                "options": [
-                    "A.服务事项覆盖度",
-                    "B.办事指南准确度",
-                    "C.在线服务深度",
-                    "D.在线服务成效度。"
-                ],
-                "answer": ["A", "B", "C", "D"]
-            },
-            {
-                "id": 14,
-                "question": "互联网政务服务电子监察管理功能包括监察规则设置、运行监察及（ ）。",
-                "options": [
-                    "A.投诉处理",
-                    "B.效能管理",
-                    "C.统计分析",
-                    "D.监察日志"
-                ],
-                "answer": ["A", "B", "C", "D"]
-            },
-            {
-                "id": 15,
-                "question": "互联网政务服务内部监督也叫电子政务监督，电子监察规则分为以下五类，包括时效异常、流程异常、（ ）。",
-                "options": [
-                    "A.内容异常",
-                    "B.裁量（收费）异常",
-                    "C.廉政风险点异常",
-                    "D.系统异常"
-                ],
-                "answer": ["A", "B", "C"]
-            },
-            {
-                "id": 16,
-                "question": "互联网政务服务自然人注册包括（ ）、密码、手机号码、邮箱、地址等。",
-                "options": [
-                    "A.用户姓名",
-                    "B.证件类型",
-                    "C.证件号码",
-                    "D.用户名"
-                ],
-                "answer": ["A", "B", "C", "D"]
-            },
-            {
-                "id": 17,
-                "question": "就医费用报销\"高效办成一件事\"包括（ ）。",
-                "options": [
-                    "A.职工医保个人账户家庭共济办理",
-                    "B.基本医疗保险参保人员异地就医备案",
-                    "C.五种门诊慢特病费用跨省直接结算",
-                    "D.医疗费用报销直接结算",
-                    "E.生育保险缴费历史查询"
-                ],
-                "answer": ["A", "B", "C", "D"]
-            },
-            {
-                "id": 18,
-                "question": "农村建房\"高效办成一件事\"包括（ ）。",
-                "options": [
-                    "A.农村村民住宅建设用地审批",
-                    "B.乡村建设规划许可证核发",
-                    "C.农村居民建房使用林地登记备案",
-                    "D.不动产统一登记",
-                    "E.限额以上村民建房《建筑工程施工许可证》核发"
-                ],
-                "answer": ["A", "B", "C", "D", "E"]
-            },
-            {
-                "id": 19,
-                "question": "结婚落户\"高效办成一件事\"包括（ ）。",
-                "options": [
-                    "A.居民身份证申领",
-                    "B.户口登记项目内容变更更正证明",
-                    "C.内地居民婚姻登记",
-                    "D.户口登记项目变更(婚姻状况)",
-                    "E.户口迁移(夫妻投靠落户)"
-                ],
-                "answer": ["C", "D", "E"]
-            },
-            {
-                "id": 20,
-                "question": "科技成果转化\"高效办成一件事\"包括（ ）。",
-                "options": [
-                    "A.科技成果查新",
-                    "B.科技成果登记",
-                    "C.科技成果转化专项资金申请",
-                    "D.知识产权支持资金申请",
-                    "E.现行相关税收优惠政策宣传辅导"
-                ],
-                "answer": ["A", "B", "C", "D", "E"]
-            },
-            {
-                "id": 21,
-                "question": "教育入学\"高效办成一件事\"包括（）。",
-                "options": [
-                    "A.新生入学信息采集",
-                    "B.户籍类证明",
-                    "C.居住证",
-                    "D.不动产权证书",
-                    "E.社会保险参保缴费记录查询",
-                    "F.身份证"
-                ],
-                "answer": ["A", "B", "C", "D", "E"]
-            },
-            {
-                "id": 22,
-                "question": "政府信息公开申请包括下列内容（ ）。",
-                "options": [
-                    "A.申请人的姓名、名称",
-                    "B.申请人的联系方式",
-                    "C.申请人的工作单位",
-                    "D.申请公开的政府信息的形式要求",
-                    "E.申请公开的政府信息的时间要求",
-                    "F.申请公开的政府信息的内容描述"
-                ],
-                "answer": ["A", "B", "D", "F"]
-            },
-            {
-                "id": 23,
-                "question": "提高行政机关依法公开政府信息的能力和水平，必须做到（ ）。",
-                "options": [
-                    "A.建立健全政府信息公开工作考核制度",
-                    "B.建立健全政府信息公开工作社会评议制度",
-                    "C.加强行政机关队伍建设",
-                    "D.建立健全政府信息公开工作责任追究制度",
-                    "E.提高行政工作人员综合素质"
-                ],
-                "answer": ["A", "B", "D"]
-            },
-            {
-                "id": 24,
-                "question": "下列有关电子政务描述正确的是（ ）。",
-                "options": [
-                    "A.政府可以通过电子政务对电子商务进行管理",
-                    "B.电子政务系统就是办公系统",
-                    "C.电子商务是电子政务的重要组成部分",
-                    "D.电子商务可以推动电子政务的发展"
-                ],
-                "answer": ["A", "C"]
-            },
-            {
-                "id": 25,
-                "question": "依申请公开和主动公开的主要区别是（ ）。",
-                "options": [
-                    "A.公开政府信息的动因不同",
-                    "B.制度设立的功能不同",
-                    "C.行政机关提供政府信息的途径不同",
-                    "D.是否收取费用上不同",
-                    "E.公开政府信息的目的不同"
-                ],
-                "answer": ["A", "B", "C", "D"]
-            },
-            {
-                "id": 26,
-                "question": "应当适用《中华人民共和国政府信息公开条例》的两类主体是（ ）。",
-                "options": [
-                    "A.立法机关",
-                    "B.司法机关",
-                    "C.行政机关",
-                    "D.法律、法规授权的具有管理公共事务职能的组织",
-                    "E.教育机构"
-                ],
-                "answer": ["C", "D"]
-            },
-            {
-                "id": 27,
-                "question": "在实施政府信息公开行为时行政机关可能存在的违法行为包括（ ）。",
-                "options": [
-                    "A.不依法履行政府信息公开义务",
-                    "B.不及时更新公开的政府信息内容、政府信息公开指南和政府信息公开目录",
-                    "C.违反规定收取费用，以及通过其他组织，个人以有偿服务方式提供政府信息",
-                    "D.公开不应当公开的政府信息",
-                    "E.有违反《中华人民共和国政府信息公开条例》规定的其他行为"
-                ],
-                "answer": ["A", "B", "C", "D", "E"]
-            },
-            {
-                "id": 28,
-                "question": "行政机关依法决定收取信息处理费的，向申请人发出收费通知，说明收费的（ ）。",
-                "options": [
-                    "A.依据",
-                    "B.标准",
-                    "C.数额",
-                    "D.缴纳方式"
-                ],
-                "answer": ["A", "B", "C", "D"]
-            },
-            {
-                "id": 29,
-                "question": "互联网关键保障技术体系建设的核心是建成网上（ ）。",
-                "options": [
-                    "A.统一身份认证体系",
-                    "B.统一支付体系",
-                    "C.统一电子证照库",
-                    "D.促进云计算、大数据、物联网、移动互联网等在政务服务中的应用"
-                ],
-                "answer": ["A", "B", "C", "D"]
-            },
-            {
-                "id": 30,
-                "question": "确定答复政府信息公开申请的一般时限须考虑的主要因素是（ ）。",
-                "options": [
-                    "A.能够区分处理",
-                    "B.行政机关要从便民原则出发，答复政府信息公开申请",
-                    "C.时限必须明确",
-                    "D.坚持公共利益优先原则",
-                    "E.时限的规定应当合理"
-                ],
-                "answer": ["B", "C", "E"]
-            }
-        ];
-
-        // 应用状态
-        const state = {
-            currentQuestionIndex: 0,
-            selectedQuestions: [],
-            userAnswers: [],
-            timeLeft: 60, // 1分钟
-            timer: null
-        };
-
         // DOM元素
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('error-message');
+        const startBtn = document.getElementById('start-btn');
+        const timerContainer = document.getElementById('timer-container');
+        const questionContainer = document.getElementById('question-container');
         const questionText = document.getElementById('question-text');
         const optionsContainer = document.getElementById('options-container');
         const optionButtons = document.getElementById('option-buttons');
+        const bottomControls = document.getElementById('bottom-controls');
         const nextBtn = document.getElementById('next-btn');
         const timeDisplay = document.getElementById('time');
         const currentQuestionDisplay = document.getElementById('current-question');
@@ -632,7 +331,66 @@
         const scoreDisplay = document.getElementById('score');
         const resultMessage = document.getElementById('result-message');
         const restartBtn = document.getElementById('restart-btn');
-        const questionNavigation = document.getElementById('question-navigation');
+        const answerReview = document.getElementById('answer-review');
+
+        // 应用状态
+        const state = {
+            currentQuestionIndex: 0,
+            selectedQuestions: [],
+            userAnswers: [],
+            timeLeft: 60, // 1分钟
+            timer: null,
+            allQuestions: []
+        };
+
+        // 页面加载完成后自动加载JSON文件
+        window.addEventListener('DOMContentLoaded', () => {
+            loadQuestionsFromJSON();
+        });
+
+        // 从JSON文件加载题目
+        async function loadQuestionsFromJSON() {
+            try {
+                // 尝试从同目录下的JSON文件加载题目
+                const response = await fetch('1-295.json');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // 验证数据格式
+                if (!Array.isArray(data) || data.length === 0) {
+                    throw new Error('题库格式不正确');
+                }
+                
+                // 验证每个题目是否包含必要的字段
+                for (const question of data) {
+                    if (!question.id || !question.question || !question.options || !question.answer) {
+                        throw new Error('题目格式不正确');
+                    }
+                }
+                
+                // 保存所有题目
+                state.allQuestions = data;
+                
+                // 隐藏加载提示，显示开始按钮
+                loading.style.display = 'none';
+                startBtn.style.display = 'block';
+                
+            } catch (error) {
+                console.error('加载题库失败:', error);
+                loading.style.display = 'none';
+                errorMessage.style.display = 'block';
+            }
+        }
+
+        // 开始答题按钮点击事件
+        startBtn.addEventListener('click', () => {
+            startBtn.style.display = 'none';
+            initApp();
+        });
 
         // 初始化应用
         function initApp() {
@@ -646,8 +404,10 @@
             // 显示第一题
             showQuestion(0);
             
-            // 生成导航按钮
-            generateNavigationButtons();
+            // 显示答题界面
+            timerContainer.style.display = 'flex';
+            questionContainer.style.display = 'block';
+            bottomControls.style.display = 'flex';
             
             // 开始计时
             startTimer();
@@ -655,7 +415,7 @@
 
         // 从所有题目中随机选择指定数量的题目
         function getRandomQuestions(count) {
-            const shuffled = [...allQuestions].sort(() => 0.5 - Math.random());
+            const shuffled = [...state.allQuestions].sort(() => 0.5 - Math.random());
             return shuffled.slice(0, count);
         }
 
@@ -665,7 +425,8 @@
             const question = state.selectedQuestions[index];
             
             // 更新题目文本
-            questionText.textContent = `${index + 1}. ${question.question}`;
+            const questionType = question.answer.length === 1 ? "单选题" : "多选题";
+            questionText.innerHTML = `${index + 1}. ${question.question} <span class="question-type">${questionType}</span>`;
             
             // 更新当前题目显示
             currentQuestionDisplay.textContent = index + 1;
@@ -702,8 +463,8 @@
                 optionButtons.appendChild(optionBtn);
             });
             
-            // 更新导航按钮状态
-            updateNavigationButtons();
+            // 更新下一题按钮状态
+            nextBtn.disabled = state.userAnswers[index].length === 0;
         }
 
         // 切换选项选择状态
@@ -725,48 +486,6 @@
             
             // 重新显示当前题目以更新选择状态
             showQuestion(state.currentQuestionIndex);
-        }
-
-        // 生成导航按钮
-        function generateNavigationButtons() {
-            questionNavigation.innerHTML = '';
-            
-            for (let i = 0; i < state.selectedQuestions.length; i++) {
-                const navBtn = document.createElement('div');
-                navBtn.className = 'nav-btn';
-                navBtn.textContent = i + 1;
-                
-                if (i === state.currentQuestionIndex) {
-                    navBtn.classList.add('current');
-                }
-                
-                if (state.userAnswers[i].length > 0) {
-                    navBtn.classList.add('answered');
-                }
-                
-                navBtn.addEventListener('click', () => {
-                    showQuestion(i);
-                });
-                
-                questionNavigation.appendChild(navBtn);
-            }
-        }
-
-        // 更新导航按钮状态
-        function updateNavigationButtons() {
-            const navButtons = questionNavigation.querySelectorAll('.nav-btn');
-            
-            navButtons.forEach((btn, i) => {
-                btn.classList.remove('current', 'answered');
-                
-                if (i === state.currentQuestionIndex) {
-                    btn.classList.add('current');
-                }
-                
-                if (state.userAnswers[i].length > 0) {
-                    btn.classList.add('answered');
-                }
-            });
         }
 
         // 下一题按钮点击事件
@@ -826,12 +545,57 @@
                 resultMessage.textContent = "需要加强学习，建议您系统学习政务服务相关知识。";
             }
             
+            // 显示答题记录
+            displayAnswerReview();
+            
             // 显示结果容器，隐藏题目容器
-            document.querySelector('.question-container').style.display = 'none';
-            document.querySelector('.bottom-controls').style.display = 'none';
-            document.querySelector('.question-navigation').style.display = 'none';
-            document.querySelector('.timer-container').style.display = 'none';
+            questionContainer.style.display = 'none';
+            bottomControls.style.display = 'none';
+            timerContainer.style.display = 'none';
             resultContainer.style.display = 'block';
+        }
+
+        // 显示答题记录
+        function displayAnswerReview() {
+            answerReview.innerHTML = '';
+            
+            state.selectedQuestions.forEach((question, index) => {
+                const userAnswer = state.userAnswers[index];
+                const correctAnswer = question.answer;
+                
+                // 判断答案是否正确
+                const isCorrect = userAnswer.sort().join('') === correctAnswer.sort().join('');
+                
+                // 创建答题记录项
+                const reviewItem = document.createElement('div');
+                reviewItem.className = 'review-item';
+                
+                // 添加题目
+                const questionElement = document.createElement('div');
+                questionElement.className = 'review-question';
+                questionElement.textContent = `${index + 1}. ${question.question}`;
+                reviewItem.appendChild(questionElement);
+                
+                // 添加用户答案
+                const userAnswerElement = document.createElement('div');
+                userAnswerElement.className = 'review-answer';
+                userAnswerElement.innerHTML = `<strong>您的答案：</strong>${userAnswer.length > 0 ? userAnswer.join('、') : '未作答'}`;
+                reviewItem.appendChild(userAnswerElement);
+                
+                // 添加正确答案
+                const correctAnswerElement = document.createElement('div');
+                correctAnswerElement.className = 'review-answer';
+                correctAnswerElement.innerHTML = `<strong>正确答案：</strong>${correctAnswer.join('、')}`;
+                reviewItem.appendChild(correctAnswerElement);
+                
+                // 添加答题状态
+                const statusElement = document.createElement('div');
+                statusElement.className = `review-status ${isCorrect ? 'correct' : 'incorrect'}`;
+                statusElement.textContent = isCorrect ? '✓ 回答正确' : '✗ 回答错误';
+                reviewItem.appendChild(statusElement);
+                
+                answerReview.appendChild(reviewItem);
+            });
         }
 
         // 重新开始按钮点击事件
@@ -842,18 +606,15 @@
             state.timeLeft = 60;
             
             // 重置显示
-            document.querySelector('.question-container').style.display = 'block';
-            document.querySelector('.bottom-controls').style.display = 'flex';
-            document.querySelector('.question-navigation').style.display = 'flex';
-            document.querySelector('.timer-container').style.display = 'flex';
             resultContainer.style.display = 'none';
+            timerContainer.style.display = 'flex';
+            questionContainer.style.display = 'block';
+            bottomControls.style.display = 'flex';
             
             // 重新开始
-            initApp();
+            showQuestion(0);
+            startTimer();
         });
-
-        // 初始化应用
-        initApp();
     </script>
 </body>
 </html>
