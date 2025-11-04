@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>政务服务知识答题库</title>
+    <title>政务服务知识答题系统</title>
     <style>
         * {
             margin: 0;
@@ -201,7 +201,7 @@
         .answer-review {
             margin-top: 30px;
             text-align: left;
-            max-height: 400px;
+            max-height: 500px;
             overflow-y: auto;
         }
         
@@ -234,6 +234,18 @@
             margin-top: 5px;
         }
         
+        .correct-options {
+            margin-top: 10px;
+            padding: 10px;
+            background: #d4edda;
+            border-radius: 4px;
+            border-left: 4px solid #28a745;
+        }
+        
+        .correct-option {
+            margin-bottom: 5px;
+        }
+        
         .loading {
             text-align: center;
             padding: 20px;
@@ -264,6 +276,26 @@
         
         .start-btn:hover {
             background: #155d9c;
+        }
+        
+        .review-navigation {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 10px;
+        }
+        
+        .review-nav-btn {
+            padding: 8px 16px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .review-nav-btn:hover {
+            background: #5a6268;
         }
     </style>
 </head>
@@ -309,6 +341,10 @@
         <div class="answer-review" id="answer-review">
             <!-- 答题记录将通过JavaScript动态生成 -->
         </div>
+        <div class="review-navigation">
+            <button class="review-nav-btn" id="prev-review-btn">上一题</button>
+            <button class="review-nav-btn" id="next-review-btn">下一题</button>
+        </div>
         <button class="restart-btn" id="restart-btn">重新开始</button>
     </div>
 
@@ -332,6 +368,8 @@
         const resultMessage = document.getElementById('result-message');
         const restartBtn = document.getElementById('restart-btn');
         const answerReview = document.getElementById('answer-review');
+        const prevReviewBtn = document.getElementById('prev-review-btn');
+        const nextReviewBtn = document.getElementById('next-review-btn');
 
         // 应用状态
         const state = {
@@ -340,7 +378,8 @@
             userAnswers: [],
             timeLeft: 60, // 1分钟
             timer: null,
-            allQuestions: []
+            allQuestions: [],
+            currentReviewIndex: 0
         };
 
         // 页面加载完成后自动加载JSON文件
@@ -569,6 +608,8 @@
                 // 创建答题记录项
                 const reviewItem = document.createElement('div');
                 reviewItem.className = 'review-item';
+                reviewItem.id = `review-item-${index}`;
+                if (index !== 0) reviewItem.style.display = 'none';
                 
                 // 添加题目
                 const questionElement = document.createElement('div');
@@ -588,6 +629,23 @@
                 correctAnswerElement.innerHTML = `<strong>正确答案：</strong>${correctAnswer.join('、')}`;
                 reviewItem.appendChild(correctAnswerElement);
                 
+                // 添加正确答案选项及内容
+                const correctOptionsElement = document.createElement('div');
+                correctOptionsElement.className = 'correct-options';
+                
+                // 创建正确答案选项列表
+                correctAnswer.forEach(letter => {
+                    const option = question.options.find(opt => opt.startsWith(letter));
+                    if (option) {
+                        const optionElement = document.createElement('div');
+                        optionElement.className = 'correct-option';
+                        optionElement.textContent = option;
+                        correctOptionsElement.appendChild(optionElement);
+                    }
+                });
+                
+                reviewItem.appendChild(correctOptionsElement);
+                
                 // 添加答题状态
                 const statusElement = document.createElement('div');
                 statusElement.className = `review-status ${isCorrect ? 'correct' : 'incorrect'}`;
@@ -596,12 +654,41 @@
                 
                 answerReview.appendChild(reviewItem);
             });
+            
+            // 更新导航按钮状态
+            updateReviewNavigation();
         }
+
+        // 更新答题记录导航
+        function updateReviewNavigation() {
+            prevReviewBtn.disabled = state.currentReviewIndex === 0;
+            nextReviewBtn.disabled = state.currentReviewIndex === state.selectedQuestions.length - 1;
+        }
+
+        // 答题记录导航按钮事件
+        prevReviewBtn.addEventListener('click', () => {
+            if (state.currentReviewIndex > 0) {
+                document.getElementById(`review-item-${state.currentReviewIndex}`).style.display = 'none';
+                state.currentReviewIndex--;
+                document.getElementById(`review-item-${state.currentReviewIndex}`).style.display = 'block';
+                updateReviewNavigation();
+            }
+        });
+
+        nextReviewBtn.addEventListener('click', () => {
+            if (state.currentReviewIndex < state.selectedQuestions.length - 1) {
+                document.getElementById(`review-item-${state.currentReviewIndex}`).style.display = 'none';
+                state.currentReviewIndex++;
+                document.getElementById(`review-item-${state.currentReviewIndex}`).style.display = 'block';
+                updateReviewNavigation();
+            }
+        });
 
         // 重新开始按钮点击事件
         restartBtn.addEventListener('click', () => {
             // 重置状态
             state.currentQuestionIndex = 0;
+            state.currentReviewIndex = 0;
             state.userAnswers = new Array(state.selectedQuestions.length).fill([]);
             state.timeLeft = 60;
             
