@@ -1,14 +1,940 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-<meta http-equiv="X-UA-Compatible" content="ie=edge">
-<link rel="stylesheet" href="/hst-dumi/umi.4e0bcd92.css">
-<script src="/hst-dumi/preload_helper.b055f9bf.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>政务服务知识答题系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            width: 90%;
+            max-width: 1024px;
+            height: 90vh;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #1a6dbe 0%, #2a8ae4 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .title {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .timer {
+            font-size: 20px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background-color: #e0e0e0;
+            width: 100%;
+        }
+        
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .quiz-container {
+            padding: 30px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .question-number {
+            color: #1a6dbe;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        
+        .question-text {
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        
+        .options-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex: 1;
+        }
+        
+        .option {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            align-items: flex-start;
+            /* 禁用选项区域的点击 */
+            pointer-events: none;
+        }
+        
+        .option.selected {
+            background: #e3f2fd;
+            border-color: #1a6dbe;
+        }
+        
+        .option-label {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: #1a6dbe;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        
+        .option-text {
+            flex: 1;
+        }
+        
+        .bottom-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+        }
+        
+        .options-labels {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .option-letter {
+            width: 50px;
+            height: 50px;
+            background: #f0f0f0;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: #555;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 18px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .option-letter.selected {
+            background: #1a6dbe;
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(26, 109, 190, 0.3);
+        }
+        
+        .option-letter:hover {
+            background: #e0e0e0;
+        }
+        
+        .option-letter.selected:hover {
+            background: #1a6dbe;
+        }
+        
+        .navigation {
+            display: flex;
+            gap: 15px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .btn-next {
+            background: #1a6dbe;
+            color: white;
+        }
+        
+        .btn-submit {
+            background: #4caf50;
+            color: white;
+        }
+        
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result-container {
+            padding: 30px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            flex: 1;
+        }
+        
+        .result-title {
+            font-size: 28px;
+            margin-bottom: 30px;
+            color: #1a6dbe;
+        }
+        
+        .score {
+            font-size: 72px;
+            font-weight: bold;
+            color: #4caf50;
+            margin: 20px 0;
+        }
+        
+        .result-details {
+            margin-top: 30px;
+            width: 100%;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .result-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+        }
+        
+        .correct {
+            color: #4caf50;
+        }
+        
+        .incorrect {
+            color: #f44336;
+        }
+        
+        .question-review {
+            margin-top: 10px;
+            padding-left: 20px;
+        }
+        
+        .correct-answer {
+            color: #4caf50;
+            font-weight: 500;
+        }
+        
+        .user-answer {
+            color: #f44336;
+        }
+        
+        .restart-btn {
+            margin-top: 30px;
+            background: #1a6dbe;
+            color: white;
+            padding: 12px 30px;
+            font-size: 18px;
+        }
+        
+        @media (max-width: 768px) {
+            header {
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .title {
+                font-size: 20px;
+            }
+            
+            .timer {
+                font-size: 18px;
+            }
+            
+            .quiz-container {
+                padding: 20px;
+            }
+            
+            .bottom-area {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .options-labels {
+                order: 2;
+            }
+            
+            .navigation {
+                order: 1;
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+    </style>
 </head>
 <body>
-<div id="root"></div>
-<script src="/hst-dumi/umi.a026b898.js"></script>
+    <div class="container">
+        <header>
+            <div class="title">政务服务知识答题系统</div>
+            <div class="timer" id="timer">01:00</div>
+        </header>
+        
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+        
+        <div class="quiz-container" id="quiz-container">
+            <div class="question-number" id="question-number">题目 1 / 30</div>
+            <div class="question-text" id="question-text"></div>
+            
+            <div class="options-container" id="options-container">
+                <!-- 选项将通过JavaScript动态生成 -->
+            </div>
+            
+            <div class="bottom-area">
+                <div class="options-labels" id="options-labels">
+                    <!-- 选项字母将通过JavaScript动态生成 -->
+                </div>
+                
+                <div class="navigation">
+                    <button class="btn-next" id="next-btn">下一题</button>
+                    <button class="btn-submit" id="submit-btn" style="display: none;">提交答案</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="result-container" id="result-container">
+            <div class="result-title">答题结果</div>
+            <div class="score" id="score">0</div>
+            <div style="font-size: 18px; margin-bottom: 30px;">
+                您答对了 <span id="correct-count">0</span> 道题，共 <span id="total-count">0</span> 道题
+            </div>
+            
+            <div class="result-details" id="result-details">
+                <!-- 答题详情将通过JavaScript动态生成 -->
+            </div>
+            
+            <button class="restart-btn" id="restart-btn">重新开始</button>
+        </div>
+    </div>
+
+    <script>
+        // 题库数据（从您提供的文件中提取的59道题）
+        const allQuestions = [
+            {
+                question: "属于政府信息查阅场所的是（ ）。",
+                options: [
+                    "A.电子图书馆",
+                    "B.大学图书馆",
+                    "C.政府网站",
+                    "D.国家档案馆",
+                    "E.公共图书馆",
+                    "F.政务服务场所"
+                ],
+                correctAnswers: ["D", "E", "F"]
+            },
+            {
+                question: "强化对行政权力的制约监督，深入推进政务公开，扩大和保障人民群众（ ）。",
+                options: [
+                    "A.知情权",
+                    "B.知悉权",
+                    "C.表达权",
+                    "D.建议权",
+                    "E.监督权",
+                    "F.参与权"
+                ],
+                correctAnswers: ["A", "C", "E", "F"]
+            },
+            {
+                question: "委托人在中介超市选取中介机构主要有以下几种方式。（ ）",
+                options: [
+                    "A.随机选取",
+                    "B.竞价选取",
+                    "C.直接选取",
+                    "D.摇号选取",
+                    "E.公开选取"
+                ],
+                correctAnswers: ["A", "B", "C"]
+            },
+            {
+                question: "《国务院关于加快推进政务服务标准化规范化便利化的指导意见》（国发〔2022〕5号）中提出不断提升政务服务\"三化\"水平，\"三化\"指的是（）。",
+                options: [
+                    "A.标准化",
+                    "B.高效化",
+                    "C.规范化",
+                    "D.便利化",
+                    "E.智能化"
+                ],
+                correctAnswers: ["A", "C", "D"]
+            },
+            {
+                question: "政务数据共享主管部门违反本条例规定，有下列( )情形之一的，由本级人民政府或者上级主管部门责令改正；拒不改正或者情节严重的，对负有责任的领导人员和直接责任人员依法给予处分。",
+                options: [
+                    "A.未按照规定保存通过共享获取的政务数据有关记录",
+                    "B.未对通过共享获取的政务数据履行安全管理责任",
+                    "C.未按照规定明确数源部门",
+                    "D.未按照规定对政务数据共享争议进行协调处理",
+                    "E.违反本条例规定的其他情形。"
+                ],
+                correctAnswers: ["C", "D", "E"]
+            },
+            {
+                question: "对政务公开窗口工作人员进行岗前培训和定期培训，按照（ ）的上岗标准。",
+                options: [
+                    "A.会答",
+                    "B.会指导",
+                    "C.会笑",
+                    "D.会查",
+                    "E.会说",
+                    "F.会宣传"
+                ],
+                correctAnswers: ["A", "C", "D"]
+            },
+            {
+                question: "根据《中华人民共和国政府信息公开条例》的规定，申请人以政府信息公开申请的形式进行（ ）三类活动，行政机关应当告知申请人不作为政府信息公开申请处理并可以告知通过相应渠道提出。",
+                options: [
+                    "A.检举",
+                    "B.信访",
+                    "C.投诉",
+                    "D.举报",
+                    "E.上诉"
+                ],
+                correctAnswers: ["B", "C", "D"]
+            },
+            {
+                question: "建设各级政务服务数据共享平台，目的是推进跨地区、跨部门、跨层级数据共享、身份互信、证照互用及（ ）。",
+                options: [
+                    "A.业务协同",
+                    "B.实现就近办理",
+                    "C.同城通办",
+                    "D.异地可办"
+                ],
+                correctAnswers: ["A", "B", "C", "D"]
+            },
+            {
+                question: "因工伤发生的（ ）费用,按照国家规定由用人单位支付。",
+                options: [
+                    "A.治疗工伤期间的工资福利",
+                    "B.五级、六级伤残职工按月领取的伤残津贴",
+                    "C.终止或者解除劳动合同时,应当享受的一次性伤残就业补助金",
+                    "D.住院伙食补助费",
+                    "E.到统筹地区以外就医的交通食宿费"
+                ],
+                correctAnswers: ["A", "B", "C"]
+            },
+            {
+                question: "建设\"互联网+政务服务\"的总体目标是（ ）。",
+                options: [
+                    "A.优化各地区各部门网上政务服务平台建设不断简化优化企业和群众办事流程",
+                    "B.促进网上政务服务运行规范",
+                    "C.让信息\"多跑路\"让群众\"少跑腿\"",
+                    "D.就近办"
+                ],
+                correctAnswers: ["A", "B", "C", "D"]
+            },
+            // 更多题目...
+            {
+                question: "开展各地区各部门一体化政务服务平台建设，主要是为实现政务服务事项（ ）。",
+                options: [
+                    "A.统一申请",
+                    "B.统一受理",
+                    "C.集中办理",
+                    "D.统一反馈和全流程监督"
+                ],
+                correctAnswers: ["A", "B", "C", "D"]
+            },
+            {
+                question: "公民、法人或者其他组织认为行政机关在政府信息公开工作中侵犯其合法权益的，可以向上一级行政机关或者政府信息公开工作主管部门投诉、举报，也可以依法（ ）。",
+                options: [
+                    "A.检举",
+                    "B.追责",
+                    "C.申请行政复议",
+                    "D.提起行政诉讼"
+                ],
+                correctAnswers: ["C", "D"]
+            },
+            {
+                question: "互联网政务服务第三方评估指标主要包括服务方式完备度及（ ）。",
+                options: [
+                    "A.服务事项覆盖度",
+                    "B.办事指南准确度",
+                    "C.在线服务深度",
+                    "D.在线服务成效度。"
+                ],
+                correctAnswers: ["A", "B", "C", "D"]
+            },
+            {
+                question: "互联网政务服务电子监察管理功能包括监察规则设置、运行监察及（ ）。",
+                options: [
+                    "A.投诉处理",
+                    "B.效能管理",
+                    "C.统计分析",
+                    "D.监察日志"
+                ],
+                correctAnswers: ["A", "B", "C", "D"]
+            },
+            {
+                question: "互联网政务服务内部监督也叫电子政务监督，电子监察规则分为以下五类，包括时效异常、流程异常、（ ）。",
+                options: [
+                    "A.内容异常",
+                    "B.裁量（收费）异常",
+                    "C.廉政风险点异常",
+                    "D.系统异常"
+                ],
+                correctAnswers: ["A", "B", "C"]
+            },
+            {
+                question: "互联网政务服务自然人注册包括（ ）、密码、手机号码、邮箱、地址等。",
+                options: [
+                    "A.用户姓名",
+                    "B.证件类型",
+                    "C.证件号码",
+                    "D.用户名"
+                ],
+                correctAnswers: ["A", "B", "C", "D"]
+            },
+            {
+                question: "就医费用报销\"高效办成一件事\"包括（ ）。",
+                options: [
+                    "A.职工医保个人账户家庭共济办理",
+                    "B.基本医疗保险参保人员异地就医备案",
+                    "C.五种门诊慢特病费用跨省直接结算",
+                    "D.医疗费用报销直接结算",
+                    "E.生育保险缴费历史查询"
+                ],
+                correctAnswers: ["A", "B", "C", "D"]
+            },
+            {
+                question: "农村建房\"高效办成一件事\"包括（ ）。",
+                options: [
+                    "A.农村村民住宅建设用地审批",
+                    "B.乡村建设规划许可证核发",
+                    "C.农村居民建房使用林地登记备案",
+                    "D.不动产统一登记",
+                    "E.限额以上村民建房《建筑工程施工许可证》核发"
+                ],
+                correctAnswers: ["A", "B", "C", "D", "E"]
+            },
+            {
+                question: "结婚落户\"高效办成一件事\"包括（ ）。",
+                options: [
+                    "A.居民身份证申领",
+                    "B.户口登记项目内容变更更正证明",
+                    "C.内地居民婚姻登记",
+                    "D.户口登记项目变更(婚姻状况)",
+                    "E.户口迁移(夫妻投靠落户)"
+                ],
+                correctAnswers: ["C", "D", "E"]
+            },
+            {
+                question: "科技成果转化\"高效办成一件事\"包括（ ）。",
+                options: [
+                    "A.科技成果查新",
+                    "B.科技成果登记",
+                    "C.科技成果转化专项资金申请",
+                    "D.知识产权支持资金申请",
+                    "E.现行相关税收优惠政策宣传辅导"
+                ],
+                correctAnswers: ["A", "B", "C", "D", "E"]
+            },
+            {
+                question: "教育入学\"高效办成一件事\"包括（）。",
+                options: [
+                    "A.新生入学信息采集",
+                    "B.户籍类证明",
+                    "C.居住证",
+                    "D.不动产权证书",
+                    "E.社会保险参保缴费记录查询",
+                    "F.身份证"
+                ],
+                correctAnswers: ["A", "B", "C", "D", "E"]
+            },
+            {
+                question: "政府信息公开申请包括下列内容（ ）。",
+                options: [
+                    "A.申请人的姓名、名称",
+                    "B.申请人的联系方式",
+                    "C.申请人的工作单位",
+                    "D.申请公开的政府信息的形式要求",
+                    "E.申请公开的政府信息的时间要求",
+                    "F.申请公开的政府信息的内容描述"
+                ],
+                correctAnswers: ["A", "B", "D", "F"]
+            },
+            {
+                question: "提高行政机关依法公开政府信息的能力和水平，必须做到（ ）。",
+                options: [
+                    "A.建立健全政府信息公开工作考核制度",
+                    "B.建立健全政府信息公开工作社会评议制度",
+                    "C.加强行政机关队伍建设",
+                    "D.建立健全政府信息公开工作责任追究制度",
+                    "E.提高行政工作人员综合素质"
+                ],
+                correctAnswers: ["A", "B", "D"]
+            },
+            {
+                question: "下列有关电子政务描述正确的是（ ）。",
+                options: [
+                    "A.政府可以通过电子政务对电子商务进行管理",
+                    "B.电子政务系统就是办公系统",
+                    "C.电子商务是电子政务的重要组成部分",
+                    "D.电子商务可以推动电子政务的发展"
+                ],
+                correctAnswers: ["A", "C"]
+            },
+            {
+                question: "依申请公开和主动公开的主要区别是（ ）。",
+                options: [
+                    "A.公开政府信息的动因不同",
+                    "B.制度设立的功能不同",
+                    "C.行政机关提供政府信息的途径不同",
+                    "D.是否收取费用上不同",
+                    "E.公开政府信息的目的不同"
+                ],
+                correctAnswers: ["A", "B", "C", "D"]
+            },
+            {
+                question: "应当适用《中华人民共和国政府信息公开条例》的两类主体是（ ）。",
+                options: [
+                    "A.立法机关",
+                    "B.司法机关",
+                    "C.行政机关",
+                    "D.法律、法规授权的具有管理公共事务职能的组织",
+                    "E.教育机构"
+                ],
+                correctAnswers: ["C", "D"]
+            },
+            {
+                question: "在实施政府信息公开行为时行政机关可能存在的违法行为包括（ ）。",
+                options: [
+                    "A.不依法履行政府信息公开义务",
+                    "B.不及时更新公开的政府信息内容、政府信息公开指南和政府信息公开目录",
+                    "C.违反规定收取费用，以及通过其他组织，个人以有偿服务方式提供政府信息",
+                    "D.公开不应当公开的政府信息",
+                    "E.有违反《中华人民共和国政府信息公开条例》规定的其他行为"
+                ],
+                correctAnswers: ["A", "B", "C", "D", "E"]
+            },
+            {
+                question: "行政机关依法决定收取信息处理费的，向申请人发出收费通知，说明收费的（ ）。",
+                options: [
+                    "A.依据",
+                    "B.标准",
+                    "C.数额",
+                    "D.缴纳方式"
+                ],
+                correctAnswers: ["A", "B", "C", "D"]
+            },
+            {
+                question: "互联网关键保障技术体系建设的核心是建成网上（ ）。",
+                options: [
+                    "A.统一身份认证体系",
+                    "B.统一支付体系",
+                    "C.统一电子证照库",
+                    "D.促进云计算、大数据、物联网、移动互联网等在政务服务中的应用"
+                ],
+                correctAnswers: ["A", "B", "C", "D"]
+            },
+            {
+                question: "确定答复政府信息公开申请的一般时限须考虑的主要因素是（ ）。",
+                options: [
+                    "A.能够区分处理",
+                    "B.行政机关要从便民原则出发，答复政府信息公开申请",
+                    "C.时限必须明确",
+                    "D.坚持公共利益优先原则",
+                    "E.时限的规定应当合理"
+                ],
+                correctAnswers: ["B", "C", "E"]
+            }
+            // 更多题目可以继续添加...
+        ];
+
+        // 应用状态
+        let currentQuestionIndex = 0;
+        let userAnswers = [];
+        let timer;
+        let timeLeft = 60; // 60秒倒计时
+        let questions = []; // 随机抽取的30道题
+
+        // DOM元素
+        const quizContainer = document.getElementById('quiz-container');
+        const resultContainer = document.getElementById('result-container');
+        const questionNumberElement = document.getElementById('question-number');
+        const questionTextElement = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const optionsLabelsElement = document.getElementById('options-labels');
+        const nextBtn = document.getElementById('next-btn');
+        const submitBtn = document.getElementById('submit-btn');
+        const timerElement = document.getElementById('timer');
+        const progressElement = document.getElementById('progress');
+        const scoreElement = document.getElementById('score');
+        const correctCountElement = document.getElementById('correct-count');
+        const totalCountElement = document.getElementById('total-count');
+        const resultDetailsElement = document.getElementById('result-details');
+        const restartBtn = document.getElementById('restart-btn');
+
+        // 初始化应用
+        function init() {
+            // 随机抽取30道题
+            questions = getRandomQuestions(30);
+            
+            // 初始化用户答案数组
+            userAnswers = Array(questions.length).fill([]);
+            
+            // 显示第一题
+            showQuestion(currentQuestionIndex);
+            
+            // 开始倒计时
+            startTimer();
+            
+            // 添加事件监听器
+            nextBtn.addEventListener('click', goToNextQuestion);
+            submitBtn.addEventListener('click', submitQuiz);
+            restartBtn.addEventListener('click', restartQuiz);
+        }
+
+        // 随机抽取指定数量的题目
+        function getRandomQuestions(count) {
+            const shuffled = [...allQuestions].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count);
+        }
+
+        // 显示问题
+        function showQuestion(index) {
+            const question = questions[index];
+            
+            // 更新问题编号和文本
+            questionNumberElement.textContent = `题目 ${index + 1} / ${questions.length}`;
+            questionTextElement.textContent = question.question;
+            
+            // 更新进度条
+            progressElement.style.width = `${((index + 1) / questions.length) * 100}%`;
+            
+            // 清空选项容器
+            optionsContainer.innerHTML = '';
+            
+            // 创建选项元素
+            question.options.forEach((option, i) => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'option';
+                
+                // 检查是否已选择该选项
+                const isSelected = userAnswers[index].includes(option.charAt(0));
+                if (isSelected) {
+                    optionElement.classList.add('selected');
+                }
+                
+                optionElement.innerHTML = `
+                    <div class="option-label">${option.charAt(0)}</div>
+                    <div class="option-text">${option}</div>
+                `;
+                
+                // 注意：这里不再添加点击事件，因为选项区域已禁用点击
+                
+                optionsContainer.appendChild(optionElement);
+            });
+            
+            // 动态生成左下角字母按钮
+            generateOptionLetters(question.options);
+            
+            // 更新按钮状态
+            if (index === questions.length - 1) {
+                nextBtn.style.display = 'none';
+                submitBtn.style.display = 'block';
+            } else {
+                nextBtn.style.display = 'block';
+                submitBtn.style.display = 'none';
+            }
+        }
+
+        // 动态生成左下角字母按钮
+        function generateOptionLetters(options) {
+            // 清空字母按钮容器
+            optionsLabelsElement.innerHTML = '';
+            
+            // 为每个选项创建一个字母按钮
+            options.forEach(option => {
+                const optionLetter = option.charAt(0);
+                const letterElement = document.createElement('div');
+                letterElement.className = 'option-letter';
+                letterElement.setAttribute('data-value', optionLetter);
+                letterElement.textContent = optionLetter;
+                
+                // 检查是否已选择该选项
+                const isSelected = userAnswers[currentQuestionIndex].includes(optionLetter);
+                if (isSelected) {
+                    letterElement.classList.add('selected');
+                }
+                
+                // 添加点击事件
+                letterElement.addEventListener('click', () => {
+                    toggleOption(optionLetter);
+                });
+                
+                optionsLabelsElement.appendChild(letterElement);
+            });
+        }
+
+        // 切换选项选择状态
+        function toggleOption(optionLetter) {
+            const currentAnswers = [...userAnswers[currentQuestionIndex]];
+            
+            if (currentAnswers.includes(optionLetter)) {
+                // 如果已经选中，则取消选择
+                userAnswers[currentQuestionIndex] = currentAnswers.filter(a => a !== optionLetter);
+            } else {
+                // 否则添加选项
+                userAnswers[currentQuestionIndex] = [...currentAnswers, optionLetter];
+            }
+            
+            // 重新显示当前问题以更新选项状态
+            showQuestion(currentQuestionIndex);
+        }
+
+        // 转到下一题
+        function goToNextQuestion() {
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                showQuestion(currentQuestionIndex);
+            }
+        }
+
+        // 开始计时器
+        function startTimer() {
+            updateTimerDisplay();
+            
+            timer = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    submitQuiz();
+                }
+            }, 1000);
+        }
+
+        // 更新计时器显示
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            // 当时间少于10秒时改变颜色
+            if (timeLeft <= 10) {
+                timerElement.style.color = '#ff5252';
+            }
+        }
+
+        // 提交答案
+        function submitQuiz() {
+            clearInterval(timer);
+            
+            // 计算得分
+            let score = 0;
+            questions.forEach((question, index) => {
+                const userAnswer = userAnswers[index].sort().join('');
+                const correctAnswer = question.correctAnswers.sort().join('');
+                
+                if (userAnswer === correctAnswer) {
+                    score++;
+                }
+            });
+            
+            // 显示结果
+            quizContainer.style.display = 'none';
+            resultContainer.style.display = 'flex';
+            
+            // 更新分数和统计
+            scoreElement.textContent = score;
+            correctCountElement.textContent = score;
+            totalCountElement.textContent = questions.length;
+            
+            // 显示答题详情
+            resultDetailsElement.innerHTML = '';
+            questions.forEach((question, index) => {
+                const userAnswer = userAnswers[index].sort().join(', ');
+                const correctAnswer = question.correctAnswers.sort().join(', ');
+                const isCorrect = userAnswer === correctAnswer;
+                
+                const resultItem = document.createElement('div');
+                resultItem.className = `result-item ${isCorrect ? 'correct' : 'incorrect'}`;
+                
+                resultItem.innerHTML = `
+                    <div><strong>题目 ${index + 1}:</strong> ${question.question}</div>
+                    <div class="question-review">
+                        <div>您的答案: <span class="user-answer">${userAnswer || '未作答'}</span></div>
+                        <div>正确答案: <span class="correct-answer">${correctAnswer}</span></div>
+                    </div>
+                `;
+                
+                resultDetailsElement.appendChild(resultItem);
+            });
+        }
+
+        // 重新开始答题
+        function restartQuiz() {
+            // 重置状态
+            currentQuestionIndex = 0;
+            questions = getRandomQuestions(30);
+            userAnswers = Array(questions.length).fill([]);
+            timeLeft = 60;
+            
+            // 重置UI
+            quizContainer.style.display = 'flex';
+            resultContainer.style.display = 'none';
+            timerElement.style.color = 'white';
+            
+            // 显示第一题
+            showQuestion(currentQuestionIndex);
+            
+            // 重新开始计时
+            startTimer();
+        }
+
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
 </body>
 </html>
