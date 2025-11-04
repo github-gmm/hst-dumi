@@ -297,6 +297,11 @@
         .review-nav-btn:hover {
             background: #5a6268;
         }
+        
+        .review-nav-btn:disabled {
+            background: #adb5bd;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -689,18 +694,20 @@
             // 重置状态
             state.currentQuestionIndex = 0;
             state.currentReviewIndex = 0;
-            state.userAnswers = new Array(state.selectedQuestions.length).fill([]);
+            state.userAnswers = [];
             state.timeLeft = 60;
+            
+            // 清除计时器
+            if (state.timer) {
+                clearInterval(state.timer);
+                state.timer = null;
+            }
             
             // 重置显示
             resultContainer.style.display = 'none';
-            timerContainer.style.display = 'flex';
-            questionContainer.style.display = 'block';
-            bottomControls.style.display = 'flex';
             
-            // 重新开始
-            showQuestion(0);
-            startTimer();
+            // 重新抽取题目并开始新的测试
+            initApp();
         });
     </script>
 </body>
