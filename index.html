@@ -302,6 +302,16 @@
             background: #adb5bd;
             cursor: not-allowed;
         }
+        
+        .warning-message {
+            text-align: center;
+            padding: 10px;
+            color: #856404;
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -316,6 +326,10 @@
     
     <div class="error-message" id="error-message" style="display: none;">
         加载题目失败，请检查JSON文件是否存在且格式正确
+    </div>
+    
+    <div class="warning-message" id="warning-message" style="display: none;">
+        题库中的题目数量不足30道，将使用全部题目进行测试
     </div>
     
     <button class="start-btn" id="start-btn" style="display: none;">开始答题</button>
@@ -357,6 +371,7 @@
         // DOM元素
         const loading = document.getElementById('loading');
         const errorMessage = document.getElementById('error-message');
+        const warningMessage = document.getElementById('warning-message');
         const startBtn = document.getElementById('start-btn');
         const timerContainer = document.getElementById('timer-container');
         const questionContainer = document.getElementById('question-container');
@@ -384,7 +399,8 @@
             timeLeft: 60, // 1分钟
             timer: null,
             allQuestions: [],
-            currentReviewIndex: 0
+            currentReviewIndex: 0,
+            usedQuestionIds: new Set() // 用于记录已使用的题目ID
         };
 
         // 页面加载完成后自动加载JSON文件
@@ -438,12 +454,22 @@
 
         // 初始化应用
         function initApp() {
+            // 重置已使用的题目ID集合
+            state.usedQuestionIds.clear();
+            
             // 随机选择30道题目
             state.selectedQuestions = getRandomQuestions(30);
-            state.userAnswers = new Array(state.selectedQuestions.length).fill([]);
             
-            // 设置总题目数
-            totalQuestionsDisplay.textContent = state.selectedQuestions.length;
+            // 如果题库中的题目数量不足30道，显示警告信息
+            if (state.selectedQuestions.length < 30) {
+                warningMessage.style.display = 'block';
+                totalQuestionsDisplay.textContent = state.selectedQuestions.length;
+            } else {
+                warningMessage.style.display = 'none';
+                totalQuestionsDisplay.textContent = 30;
+            }
+            
+            state.userAnswers = new Array(state.selectedQuestions.length).fill([]);
             
             // 显示第一题
             showQuestion(0);
@@ -457,9 +483,17 @@
             startTimer();
         }
 
-        // 从所有题目中随机选择指定数量的题目
+        // 从所有题目中随机选择指定数量的题目（确保不重复）
         function getRandomQuestions(count) {
+            // 如果题库中的题目数量不足，则返回全部题目
+            if (state.allQuestions.length <= count) {
+                return [...state.allQuestions];
+            }
+            
+            // 创建题目副本并随机排序
             const shuffled = [...state.allQuestions].sort(() => 0.5 - Math.random());
+            
+            // 从随机排序的数组中取前count个题目
             return shuffled.slice(0, count);
         }
 
